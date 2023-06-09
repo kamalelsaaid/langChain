@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv, find_dotenv
+
 _ = load_dotenv(find_dotenv())
-api_key  = os.getenv('OPENAI_API_KEY')
 
 from langchain.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
@@ -10,13 +10,9 @@ from langchain.vectorstores import Chroma
 from langchain import VectorDBQA, OpenAI
 
 
-
-
 if __name__ == "__main__":
     print("Hello VectorStore!")
-    loader = TextLoader(
-        "./samples/qa_from_txt/mediumblog.txt"
-    )
+    loader = TextLoader("./samples/qa_from_txt/mediumblog.txt")
     document = loader.load()
 
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -27,7 +23,6 @@ if __name__ == "__main__":
     db = Chroma.from_documents(texts, embeddings)
 
     # query = "What did the president say about Ketanji Brown Jackson"
-    
 
     qa = VectorDBQA.from_chain_type(
         llm=OpenAI(), chain_type="stuff", vectorstore=db, return_source_documents=False

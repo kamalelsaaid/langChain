@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv, find_dotenv
+
 _ = load_dotenv(find_dotenv())
-api_key  = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv("OPENAI_API_KEY")
 
 from typing import Tuple
 from agents.linkedin_lookup_agent import lookup as linkedin_lookup_agent

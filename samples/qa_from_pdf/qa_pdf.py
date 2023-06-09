@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv, find_dotenv
+
 _ = load_dotenv(find_dotenv())
-api_key  = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv("OPENAI_API_KEY")
 
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
