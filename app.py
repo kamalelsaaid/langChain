@@ -1,29 +1,85 @@
-from flask import Flask, render_template, request, jsonify
-from ice_breaker import ice_break_with
+from typing import Set
+import os
+from dotenv import load_dotenv, find_dotenv
 
-app = Flask(__name__)
+_ = load_dotenv(find_dotenv())
+from langchain.embeddings import OpenAIEmbeddings
+from samples.fullApp.backend.core import run_llm
+from samples.fullApp.utility.vectorStore import vectorize_doc, load_vectorized, save_pdf
+import streamlit as st
+from streamlit_chat import message
 
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+def create_sources_string(source_urls: Set[str]) -> str:
+    if not source_urls:
+        return ""
+    sources_list = list(source_urls)
+    sources_list.sort()
+    sources_string = "sources:\n"
+    for i, source in enumerate(sources_list):
+        sources_string += f"{i+1}. {source}\n"
+    return sources_string
 
 
-@app.route("/process", methods=["POST"])
-def process():
-    name = request.form["name"]
-    summary_and_facts, interests, ice_breakers, profile_pic_url = ice_break_with(
-        name=name
+def get_embeddings():
+    return OpenAIEmbeddings(openai_api_key=os.environ["OPENAI_API_KEY"])
+
+
+def main():
+    st.set_page_config(page_title="Ask PDF")
+    st.header("Ask your PDF...")
+    if (
+        "chat_answers_history" not in st.session_state
+        and "user_prompt_history" not in st.session_state
+        and "chat_history" not in st.session_state
+    ):
+        st.session_state["chat_answers_history"] = []
+        st.session_state["user_prompt_history"] = []
+        st.session_state["chat_history"] = []
+
+
+    pdf = st.file_uploader("Upload your PDF:", type="pdf")
+
+    if pdf is not None:
+        save_pdf("./localVS/myReAct.pdf", pdf)
+        embeddings = get_embeddings()
+        vectorize_doc(embeddings, "./localVS/myReAct.pdf")
+        # remove saved pdf
+
+    prompt = st.text_input("Prompt", placeholder="Enter your message here...") or st.button(
+        "Submit"
     )
-    return jsonify(
-        {
-            "summary_and_facts": summary_and_facts.to_dict(),
-            "interests": interests.to_dict(),
-            "ice_breakers": ice_breakers.to_dict(),
-            "picture_url": profile_pic_url,
-        }
-    )
+    if prompt:
+        with st.spinner("Generating response.."):
+            embeddings = get_embeddings()
+            vectoreStore = load_vectorized(embeddings)
+            generated_response = run_llm(vectoreStore, query=prompt, chat_history=st.session_state["chat_history"])
 
+            formatted_response = (
+                f"{generated_response['answer']}"
+            )
+            st.session_state.chat_history.append((prompt, generated_response["answer"]))
+            st.session_state.user_prompt_history.append(prompt)
+            st.session_state.chat_answers_history.append(formatted_response)
+
+    if "chat_answers_history" in st.session_state:
+        if st.session_state["chat_answers_history"]:
+            for generated_response, user_query in zip(
+                st.session_state["chat_answers_history"],
+                st.session_state["user_prompt_history"],
+            ):
+                message(
+                    user_query,
+                    is_user=True,
+                )
+                message(generated_response)
+
+    # with open("post1-compressed.pdf", "rb") as pdf_file:
+    #     PDFbyte = pdf_file.read()
+    # st.download_button(label="Download PDF Tutorial", 
+    #     data=PDFbyte,
+    #     file_name="pandas-clean-id-column.pdf",
+    #     mime='application/octet-stream')
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    main()
