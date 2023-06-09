@@ -4,15 +4,17 @@ from dotenv import load_dotenv, find_dotenv
 _ = load_dotenv(find_dotenv())
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, csv_loader
 from samples.fullApp.utility.consts import vsDir
 
 
-def save_pdf(filename, pdf):
+def save_doc(filename, pdf):
     filebytes = pdf.read()
     with open(filename, "wb") as f:
         f.write(filebytes)
 
+def vectorize_csv():
+    pass
 
 def vectorize_doc(embeddings, pdf_path, index_name=vsDir) -> None:
     loader = PyPDFLoader(pdf_path)

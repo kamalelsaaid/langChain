@@ -6,7 +6,7 @@ from dotenv import load_dotenv, find_dotenv
 _ = load_dotenv(find_dotenv())
 from langchain.embeddings import OpenAIEmbeddings
 from samples.fullApp.backend.core import run_llm
-from samples.fullApp.utility.vectorStore import vectorize_doc, load_vectorized, save_pdf
+from samples.fullApp.utility.vectorStore import vectorize_doc, load_vectorized, save_doc
 import streamlit as st
 from streamlit_chat import message
 from samples.fullApp.utility.consts import tmpFile, vsDir
@@ -17,7 +17,7 @@ def get_embeddings():
 
 
 def main():
-    st.set_page_config(page_title="Ask PDF")
+    st.set_page_config(page_title="PDF Reader")
     st.header("Ask your PDF...")
     if (
         "chat_answers_history" not in st.session_state
@@ -30,7 +30,7 @@ def main():
 
     pdf = st.file_uploader("Upload your PDF:", type="pdf")
     if pdf is not None:
-        save_pdf(tmpFile, pdf)
+        save_doc(tmpFile, pdf)
         embeddings = get_embeddings()
         vectorize_doc(embeddings, tmpFile)
         os.remove(tmpFile)
