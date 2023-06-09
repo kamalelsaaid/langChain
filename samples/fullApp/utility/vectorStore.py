@@ -5,6 +5,7 @@ _ = load_dotenv(find_dotenv())
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.document_loaders import PyPDFLoader
+from samples.fullApp.utility.consts import vsDir
 
 
 def save_pdf(filename, pdf):
@@ -13,7 +14,7 @@ def save_pdf(filename, pdf):
         f.write(filebytes)
 
 
-def vectorize_doc(embeddings, pdf_path, index_name="faiss_index_react") -> None:
+def vectorize_doc(embeddings, pdf_path, index_name=vsDir) -> None:
     loader = PyPDFLoader(pdf_path)
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(
@@ -21,11 +22,12 @@ def vectorize_doc(embeddings, pdf_path, index_name="faiss_index_react") -> None:
     )
     docs = text_splitter.split_documents(documents=documents)
     vectorstore = FAISS.from_documents(docs, embeddings)
-    vectorstore.save_local(os.path.join(".", "localVS", index_name))
+    vectorstore.save_local(index_name)
 
 
-def load_vectorized(embeddings, index_name="faiss_index_react"):
-    return FAISS.load_local(os.path.join(".", "localVS", index_name), embeddings)
+def load_vectorized(embeddings, index_name=vsDir):
+    if os.path.isdir(index_name):
+        return FAISS.load_local(index_name, embeddings)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from typing import Set
 import os
+import shutil
 from dotenv import load_dotenv, find_dotenv
 
 _ = load_dotenv(find_dotenv())
@@ -8,6 +9,7 @@ from samples.fullApp.backend.core import run_llm
 from samples.fullApp.utility.vectorStore import vectorize_doc, load_vectorized, save_pdf
 import streamlit as st
 from streamlit_chat import message
+from samples.fullApp.utility.consts import tmpFile, vsDir
 
 
 def get_embeddings():
@@ -27,12 +29,16 @@ def main():
         st.session_state["chat_history"] = []
 
     pdf = st.file_uploader("Upload your PDF:", type="pdf")
-
     if pdf is not None:
-        save_pdf("./localVS/myReAct.pdf", pdf)
+        save_pdf(tmpFile, pdf)
         embeddings = get_embeddings()
-        vectorize_doc(embeddings, "./localVS/myReAct.pdf")
-        # remove saved pdf
+        vectorize_doc(embeddings, tmpFile)
+        os.remove(tmpFile)
+
+    clear = st.button("Remove all uploaded files.")
+    if clear:
+        if os.path.isdir(vsDir):
+            shutil.rmtree(vsDir)
 
     prompt = st.text_input(
         "Prompt", placeholder="Enter your message here..."
@@ -41,16 +47,20 @@ def main():
         with st.spinner("Generating response.."):
             embeddings = get_embeddings()
             vectoreStore = load_vectorized(embeddings)
-            generated_response = run_llm(
-                vectoreStore,
-                query=prompt,
-                chat_history=st.session_state["chat_history"],
-            )
-
-            formatted_response = f"{generated_response['answer']}"
-            st.session_state.chat_history.append((prompt, generated_response["answer"]))
-            st.session_state.user_prompt_history.append(prompt)
-            st.session_state.chat_answers_history.append(formatted_response)
+            if vectoreStore is not None:
+                generated_response = run_llm(
+                    vectoreStore,
+                    query=prompt,
+                    chat_history=st.session_state["chat_history"],
+                )
+                formatted_response = f"{generated_response['answer']}"
+                st.session_state.chat_history.append(
+                    (prompt, generated_response["answer"])
+                )
+                st.session_state.user_prompt_history.append(prompt)
+                st.session_state.chat_answers_history.append(formatted_response)
+            else:
+                st.write("Please upload a file first...")
 
     if "chat_answers_history" in st.session_state:
         if st.session_state["chat_answers_history"]:
