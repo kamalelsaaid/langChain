@@ -8,3 +8,6 @@ chromadb
 tiktoken
 pypdf
 faiss-cpu
+pexpect
+streamlit
+streamlit-chat
