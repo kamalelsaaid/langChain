@@ -10,17 +10,6 @@ import streamlit as st
 from streamlit_chat import message
 
 
-def create_sources_string(source_urls: Set[str]) -> str:
-    if not source_urls:
-        return ""
-    sources_list = list(source_urls)
-    sources_list.sort()
-    sources_string = "sources:\n"
-    for i, source in enumerate(sources_list):
-        sources_string += f"{i+1}. {source}\n"
-    return sources_string
-
-
 def get_embeddings():
     return OpenAIEmbeddings(openai_api_key=os.environ["OPENAI_API_KEY"])
 
@@ -37,7 +26,6 @@ def main():
         st.session_state["user_prompt_history"] = []
         st.session_state["chat_history"] = []
 
-
     pdf = st.file_uploader("Upload your PDF:", type="pdf")
 
     if pdf is not None:
@@ -46,18 +34,20 @@ def main():
         vectorize_doc(embeddings, "./localVS/myReAct.pdf")
         # remove saved pdf
 
-    prompt = st.text_input("Prompt", placeholder="Enter your message here...") or st.button(
-        "Submit"
-    )
+    prompt = st.text_input(
+        "Prompt", placeholder="Enter your message here..."
+    ) or st.button("Submit")
     if prompt:
         with st.spinner("Generating response.."):
             embeddings = get_embeddings()
             vectoreStore = load_vectorized(embeddings)
-            generated_response = run_llm(vectoreStore, query=prompt, chat_history=st.session_state["chat_history"])
-
-            formatted_response = (
-                f"{generated_response['answer']}"
+            generated_response = run_llm(
+                vectoreStore,
+                query=prompt,
+                chat_history=st.session_state["chat_history"],
             )
+
+            formatted_response = f"{generated_response['answer']}"
             st.session_state.chat_history.append((prompt, generated_response["answer"]))
             st.session_state.user_prompt_history.append(prompt)
             st.session_state.chat_answers_history.append(formatted_response)
@@ -74,12 +64,6 @@ def main():
                 )
                 message(generated_response)
 
-    # with open("post1-compressed.pdf", "rb") as pdf_file:
-    #     PDFbyte = pdf_file.read()
-    # st.download_button(label="Download PDF Tutorial", 
-    #     data=PDFbyte,
-    #     file_name="pandas-clean-id-column.pdf",
-    #     mime='application/octet-stream')
 
 if __name__ == "__main__":
     main()
